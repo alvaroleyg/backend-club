@@ -42,18 +42,9 @@ class Coach
     private $age;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Assert\Choice(
-     *     choices={"técnico", "asistente", "preparador físico", "entrenador de porteros"},
-     *     message="La especialidad no es válida"
-     * )
-     */
-    private $speciality;
-
-    /**
      * @ORM\Column(type="float")
-     * @Assert\NotBlank(message="El salario no puede estar vacío")
-     * @Assert\Positive(message="El salario debe ser un número positivo")
+     * @Assert\Positive(groups={"Club"}, message="El salario debe ser positivo")
+     * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
      */
     private $salary;
 
@@ -88,18 +79,6 @@ class Coach
     public function setAge(int $age): self
     {
         $this->age = $age;
-
-        return $this;
-    }
-
-    public function getSpeciality(): ?string
-    {
-        return $this->speciality;
-    }
-
-    public function setSpeciality(?string $speciality): self
-    {
-        $this->speciality = $speciality;
 
         return $this;
     }

@@ -27,9 +27,10 @@ class PlayerController extends AbstractController
         
         $player = new Player();
         $player->setName($data['name'] ?? '');
-        $player->setSalary(0);
+        $player->setAge($data['age'] ?? 0);
+        $player->setSalary($data['salary'] ?? 0);
         
-        $errors = $validator->validate($player);
+        $errors = $validator->validate($player, null, $player->getClub() ? ['Club'] : []);
         
         if (count($errors) > 0) {
             return $this->json(['errors' => $this->formatErrors($errors)], 400);
@@ -46,7 +47,7 @@ class PlayerController extends AbstractController
     public function listPlayers(Request $request, PlayerService $playerService): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
-        $limit = $request->query->getInt('limit', 10);
+        $limit = $request->query->getInt('limit', 33);
         
         $result = $playerService->getAllPlayers($page, $limit);
         

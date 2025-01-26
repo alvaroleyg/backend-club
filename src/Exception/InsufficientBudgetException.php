@@ -1,6 +1,5 @@
 <?php
 
-// src/Exception/InsufficientBudgetException.php
 namespace App\Exception;
 
 use Symfony\Component\HttpKernel\Exception\HttpException;

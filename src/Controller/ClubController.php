@@ -1,6 +1,5 @@
 <?php
 
-// src/Controller/ClubController.php
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,11 +18,7 @@ class ClubController extends AbstractController
     /**
      * @Route("", methods={"POST"})
      */
-    public function createClub(
-        Request $request, 
-        ClubService $clubService,
-        ValidatorInterface $validator
-    ): JsonResponse {
+    public function createClub(Request $request, ClubService $clubService, ValidatorInterface $validator): JsonResponse {
         $data = json_decode($request->getContent(), true);
         
         $club = new Club();
@@ -47,7 +42,7 @@ class ClubController extends AbstractController
     }
 
     /**
-     * @Route("{id}/players", methods={"POST"})
+     * @Route("/{id}/players", methods={"POST"})
      */
     public function addPlayerToClub(int $id, Request $request, ClubService $clubService): JsonResponse
     {
@@ -114,11 +109,7 @@ class ClubController extends AbstractController
     /**
      * @Route("/{id}/players", methods={"GET"})
      */
-    public function listClubPlayers(
-        int $id,
-        Request $request,
-        ClubService $clubService
-    ): JsonResponse {
+    public function listClubPlayers(int $id, Request $request, ClubService $clubService): JsonResponse {
         $filter = $request->query->get('name');
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 10);

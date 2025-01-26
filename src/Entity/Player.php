@@ -43,8 +43,8 @@ class Player
 
     /**
      * @ORM\Column(type="float")
-     * @Assert\NotBlank(message="El salario no puede estar vacío")
-     * @Assert\Positive(message="El salario debe ser un número positivo")
+     * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
+     * @Assert\Positive(groups={"Club"}, message="El salario debe ser un número positivo")
      */
     private $salary;
 

@@ -11,6 +11,8 @@ use App\Repository\CoachRepository;
 use App\Exception\InsufficientBudgetException;
 use App\Exception\AlreadyInClubException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ClubService
 {
@@ -23,7 +25,8 @@ class ClubService
         EntityManagerInterface $entityManager,
         ClubRepository $clubRepository,
         PlayerRepository $playerRepository,
-        CoachRepository $coachRepository
+        CoachRepository $coachRepository,
+        private ValidatorInterface $validator
     ) {
         $this->entityManager = $entityManager;
         $this->clubRepository = $clubRepository;
@@ -36,26 +39,6 @@ class ClubService
         $this->entityManager->persist($club);
         $this->entityManager->flush();
         return $club;
-    }
-
-    public function addPlayerToClub(int $clubId, int $playerId, float $salary): void
-    {
-        $club = $this->clubRepository->find($clubId);
-        $player = $this->playerRepository->find($playerId);
-
-        if ($player->getClub()) {
-            throw new AlreadyInClubException();
-        }
-
-        $totalSalaries = $this->calculateTotalSalaries($club) + $salary;
-
-        if ($totalSalaries > $club->getBudget()) {
-            throw new InsufficientBudgetException();
-        }
-
-        $player->setClub($club);
-        $player->setSalary($salary);
-        $this->entityManager->flush();
     }
 
     private function calculateTotalSalaries(Club $club): float
@@ -73,23 +56,38 @@ class ClubService
         return $total;
     }
 
-    public function updateClubBudget(int $clubId, float $newBudget): void
+    public function addPlayerToClub(int $clubId, int $playerId, float $salary): void
     {
-        if ($newBudget < 0) {
-            throw new \InvalidArgumentException("El presupuesto no puede ser negativo");
+        $club = $this->clubRepository->find($clubId);
+        if (!$club) {
+            throw new NotFoundHttpException("Club no encontrado");
+        }
+
+        $player = $this->playerRepository->find($playerId);
+        if (!$player) {
+            throw new NotFoundHttpException("Jugador no encontrado");
         }
 
         $club = $this->clubRepository->find($clubId);
+        $player = $this->playerRepository->find($playerId);
 
-        $currentSalaries = $this->calculateTotalSalaries($club);
-
-        if ($newBudget < $currentSalaries) {
-            throw new InsufficientBudgetException(
-                "El nuevo presupuesto no puede ser menor a los salarios actuales ($currentSalaries)"
-            );
+        if ($player->getClub()) {
+            throw new AlreadyInClubException();
         }
 
-        $club->setBudget($newBudget);
+        $player->setClub($club);
+        $player->setSalary($salary);
+
+        $errors = $this->validator->validate($player, null, ['Club']);
+        if (count($errors) > 0) {
+            throw new \InvalidArgumentException((string) $errors);
+        }
+
+        $totalSalaries = $this->calculateTotalSalaries($club) + $salary;
+        if ($totalSalaries > $club->getBudget()) {
+            throw new InsufficientBudgetException();
+        }
+
         $this->entityManager->flush();
     }
 
@@ -102,14 +100,19 @@ class ClubService
             throw new AlreadyInClubException();
         }
 
-        $totalSalaries = $club->calculateTotalSalaries() + $salary;
+        $coach->setClub($club);
+        $coach->setSalary($salary);
 
+        $errors = $this->validator->validate($coach, null, ['Club']);
+        if (count($errors) > 0) {
+            throw new \InvalidArgumentException((string) $errors);
+        }
+
+        $totalSalaries = $this->calculateTotalSalaries($club) + $salary;
         if ($totalSalaries > $club->getBudget()) {
             throw new InsufficientBudgetException();
         }
 
-        $coach->setClub($club);
-        $coach->setSalary($salary);
         $this->entityManager->flush();
     }
 
@@ -152,5 +155,24 @@ class ClubService
             $limit
         );
     }
-    // Métodos similares para entrenadores y otras operaciones...
+
+    public function updateClubBudget(int $clubId, float $newBudget): void
+    {
+        if ($newBudget < 0) {
+            throw new \InvalidArgumentException("El presupuesto no puede ser negativo");
+        }
+
+        $club = $this->clubRepository->find($clubId);
+
+        $currentSalaries = $this->calculateTotalSalaries($club);
+
+        if ($newBudget < $currentSalaries) {
+            throw new InsufficientBudgetException(
+                "El nuevo presupuesto no puede ser menor a los salarios actuales ($currentSalaries)"
+            );
+        }
+
+        $club->setBudget($newBudget);
+        $this->entityManager->flush();
+    }
 }
