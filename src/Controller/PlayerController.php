@@ -27,7 +27,7 @@ class PlayerController extends AbstractController
         
         $player = new Player();
         $player->setName($data['name'] ?? '');
-        $player->setSalary(0); // Salario inicial 0 (sin club)
+        $player->setSalary(0);
         
         $errors = $validator->validate($player);
         

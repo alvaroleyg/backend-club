@@ -47,7 +47,7 @@ class ClubController extends AbstractController
     }
 
     /**
-     * @Route("/api/clubs/{id}/players", methods={"POST"})
+     * @Route("{id}/players", methods={"POST"})
      */
     public function addPlayerToClub(int $id, Request $request, ClubService $clubService): JsonResponse
     {
