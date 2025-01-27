@@ -31,7 +31,7 @@ class Player
     private $name;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", nullable=true)
      * @Assert\NotBlank(message="La edad no puede estar vacía")
      * @Assert\Range(
      *     min=16,
@@ -42,7 +42,7 @@ class Player
     private $age;
 
     /**
-     * @ORM\Column(type="float")
+     * @ORM\Column(type="float", nullable=true)
      * @Assert\NotBlank(message="El salario no puede estar vacío")
      * @Assert\Positive(message="El salario debe ser un número positivo")
      */

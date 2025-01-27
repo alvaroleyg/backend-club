@@ -28,8 +28,8 @@ class CoachController extends AbstractController
 
         $coach = new Coach();
         $coach->setName($data['name'] ?? '');
-        $coach->setAge($data['age'] ?? 0);
-        $coach->setSalary($data['salary'] ?? 0);
+        $coach->setAge($data['age'] ?? null);
+        $coach->setSalary($data['salary'] ?? null);
 
         $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
 

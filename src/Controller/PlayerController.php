@@ -28,8 +28,8 @@ class PlayerController extends AbstractController
 
         $player = new Player();
         $player->setName($data['name'] ?? '');
-        $player->setAge($data['age'] ?? 0);
-        $player->setSalary($data['salary'] ?? 0);
+        $player->setAge($data['age'] ?? null);
+        $player->setSalary($data['salary'] ?? null);
 
         $errors = $validator->validate($player, null, $player->getClub() ? ['Club'] : []);
 
