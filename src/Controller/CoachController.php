@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Service\CoachService;
 use App\Entity\Coach;
 
@@ -24,19 +25,27 @@ class CoachController extends AbstractController
         ValidatorInterface $validator
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
-        
+
         $coach = new Coach();
         $coach->setName($data['name'] ?? '');
+<<<<<<< Updated upstream
         $coach->setSalary(0); // Salario inicial 0 (sin club)
         
         $errors = $validator->validate($coach);
         
+=======
+        $coach->setAge($data['age'] ?? 0);
+        $coach->setSalary($data['salary'] ?? 0);
+
+        $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
+
+>>>>>>> Stashed changes
         if (count($errors) > 0) {
             return $this->json(['errors' => $this->formatErrors($errors)], 400);
         }
-        
+
         $coachService->createCoach($coach);
-        
+
         return $this->json($coach, 201);
     }
 
@@ -47,9 +56,9 @@ class CoachController extends AbstractController
     {
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 10);
-        
+
         $result = $coachService->getAllCoaches($page, $limit);
-        
+
         return $this->json([
             'data' => $result['coaches'],
             'total' => $result['total'],
@@ -64,11 +73,11 @@ class CoachController extends AbstractController
     public function getCoachDetails(int $id, CoachService $coachService): JsonResponse
     {
         $coach = $coachService->getCoachById($id);
-        
+
         if (!$coach) {
             return $this->json(['error' => 'Entrenador no encontrado'], 404);
         }
-        
+
         return $this->json($coach);
     }
 
@@ -79,5 +88,19 @@ class CoachController extends AbstractController
             $errorMessages[] = $error->getMessage();
         }
         return $errorMessages;
+    }
+
+    // src/Controller/CoachController.php
+    /**
+     * @Route("/{id}", methods={"DELETE"})
+     */
+    public function deleteCoach(int $id, CoachService $coachService): JsonResponse
+    {
+        try {
+            $coachService->deleteCoach($id);
+            return $this->json(null, 204);
+        } catch (NotFoundHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        }
     }
 }

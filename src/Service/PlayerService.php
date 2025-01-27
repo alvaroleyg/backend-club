@@ -6,6 +6,7 @@ use App\Entity\Player;
 use App\Repository\PlayerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PlayerService
 {
@@ -13,14 +14,14 @@ class PlayerService
         private EntityManagerInterface $entityManager,
         private PlayerRepository $playerRepository
     ) {}
-    
+
     public function createPlayer(Player $player): Player
     {
         $this->entityManager->persist($player);
         $this->entityManager->flush();
         return $player;
     }
-    
+
     public function getAllPlayers(int $page, int $limit): array
     {
         $query = $this->playerRepository->createQueryBuilder('p')
@@ -28,18 +29,30 @@ class PlayerService
             ->getQuery()
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
-        
+
         $paginator = new Paginator($query);
         $total = count($paginator);
-        
+
         return [
             'players' => iterator_to_array($paginator->getIterator()),
             'total' => $total
         ];
     }
-    
+
     public function getPlayerById(int $id): ?Player
     {
         return $this->playerRepository->find($id);
+    }
+
+    public function deletePlayer(int $id): void
+    {
+        $player = $this->playerRepository->find($id);
+
+        if (!$player) {
+            throw new NotFoundHttpException("Jugador no encontrado");
+        }
+
+        $this->entityManager->remove($player);
+        $this->entityManager->flush();
     }
 }

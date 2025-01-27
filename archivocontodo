@@ -1,0 +1,1047 @@
+<?php
+
+# /src/Entity/Club.php
+
+    namespace App\Entity;
+
+    use App\Repository\ClubRepository;
+    use Doctrine\Common\Collections\ArrayCollection;
+    use Doctrine\Common\Collections\Collection;
+    use Doctrine\ORM\Mapping as ORM;
+    use Symfony\Component\Validator\Constraints as Assert;
+
+    /**
+     * @ORM\Entity(repositoryClass=ClubRepository::class)
+     */
+    class Club
+    {
+        /**
+         * @ORM\Id
+         * @ORM\GeneratedValue
+         * @ORM\Column(type="integer")
+         */
+        private $id;
+
+        /**
+         * @ORM\Column(type="string", length=255)
+         * @Assert\NotBlank(message="El nombre no puede estar vacío.")
+         * @Assert\Length(
+         *     min=2,
+         *     max=255,
+         *     minMessage="El nombre debe tener al menos {{ limit }} caracteres",
+         *     maxMessage="El nombre no puede tener más de {{ limit }} caracteres"
+         * )
+         */
+        private $name;
+
+        /**
+         * @ORM\Column(type="float")
+         * @Assert\NotBlank(message="El presupuesto no puede estar vacío")
+         * @Assert\Positive(message="El presupuesto debe ser un número positivo")
+         */
+        private $budget;
+
+        /**
+         * @ORM\OneToMany(targetEntity=Player::class, mappedBy="club")
+         */
+        private $players;
+
+        /**
+         * @ORM\OneToMany(targetEntity=Coach::class, mappedBy="club")
+         */
+        private $coaches;
+
+        public function __construct()
+        {
+            $this->players = new ArrayCollection();
+            $this->coaches = new ArrayCollection();
+        }
+
+        // Getters and Setters
+        public function getId(): ?int
+        {
+            return $this->id;
+        }
+
+        public function getName(): ?string
+        {
+            return $this->name;
+        }
+
+        public function setName(string $name): self
+        {
+            $this->name = $name;
+
+            return $this;
+        }
+
+        public function getBudget(): ?float
+        {
+            return $this->budget;
+        }
+
+        public function setBudget(float $budget): self
+        {
+            $this->budget = $budget;
+
+            return $this;
+        }
+        
+        /**
+         * @return Collection<int, Player>
+         */
+        public function getPlayers(): Collection
+        {
+            return $this->players;
+        }
+
+        public function addPlayer(Player $player): self
+        {
+            if (!$this->players->contains($player)) {
+                $this->players[] = $player;
+                $player->setClub($this);
+            }
+
+            return $this;
+        }
+
+        public function removePlayer(Player $player): self
+        {
+            if ($this->players->removeElement($player)) {
+                if ($player->getClub() === $this) {
+                    $player->setClub(null);
+                }
+            }
+
+            return $this;
+        }
+
+        /**
+         * @return Collection<int, Coach>
+         */
+        public function getCoaches(): Collection
+        {
+            return $this->coaches;
+        }
+
+        public function addCoach(Coach $coach): self
+        {
+            if (!$this->coaches->contains($coach)) {
+                $this->coaches[] = $coach;
+                $coach->setClub($this);
+            }
+
+            return $this;
+        }
+
+        public function removeCoach(Coach $coach): self
+        {
+            if ($this->coaches->removeElement($coach)) {
+                if ($coach->getClub() === $this) {
+                    $coach->setClub(null);
+                }
+            }
+
+            return $this;
+        }
+
+        public function calculateTotalSalaries(): float
+        {
+            $total = 0;
+
+            foreach ($this->players as $player) {
+                $total += $player->getSalary();
+            }
+
+            foreach ($this->coaches as $coach) {
+                $total += $coach->getSalary();
+            }
+
+            return $total;
+        }
+    }
+
+
+
+# /src/Controller/ClubController.php
+
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\JsonResponse;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\Routing\Annotation\Route;
+    use Symfony\Component\Validator\Validator\ValidatorInterface;
+    use App\Service\ClubService;
+    use App\Entity\Club;
+
+    /**
+     * @Route("/api/clubs")
+     */
+    class ClubController extends AbstractController
+    {
+        /**
+         * @Route("", methods={"POST"})
+         */
+        public function createClub(Request $request, ClubService $clubService, ValidatorInterface $validator): JsonResponse {
+            $data = json_decode($request->getContent(), true);
+            
+            $club = new Club();
+            $club->setName($data['name'] ?? '');
+            $club->setBudget($data['budget'] ?? 0);
+            
+            // Validar la entidad
+            $errors = $validator->validate($club);
+            
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                return $this->json(['errors' => $errorMessages], 400);
+            }
+            
+            $clubService->createClub($club);
+            
+            return $this->json($club, 201);
+        }
+
+        /**
+         * @Route("/{id}/players", methods={"POST"})
+         */
+        public function addPlayerToClub(int $id, Request $request, ClubService $clubService): JsonResponse
+        {
+            $data = json_decode($request->getContent(), true);
+            
+            $clubService->addPlayerToClub(
+                $id,
+                $data['playerId'],
+                $data['salary']
+            );
+            
+            return $this->json(null, 204);
+        }
+
+        /**
+         * @Route("/{id}/coaches", methods={"POST"})
+         */
+        public function addCoachToClub(int $id, Request $request, ClubService $clubService): JsonResponse
+        {
+            $data = json_decode($request->getContent(), true);
+            
+            $clubService->addCoachToClub(
+                $id,
+                $data['coachId'],
+                $data['salary']
+            );
+            
+            return $this->json(null, 204);
+        }
+
+        /**
+         * @Route("/{id}/budget", methods={"PATCH"})
+         */
+        public function updateClubBudget(int $id, Request $request, ClubService $clubService): JsonResponse
+        {
+            $data = json_decode($request->getContent(), true);
+            
+            $clubService->updateClubBudget(
+                $id,
+                $data['newBudget']
+            );
+            
+            return $this->json(null, 204);
+        }
+
+        /**
+         * @Route("/{clubId}/players/{playerId}", methods={"DELETE"})
+         */
+        public function removePlayerFromClub(int $clubId, int $playerId, ClubService $clubService): JsonResponse
+        {
+            $clubService->removePlayerFromClub($clubId, $playerId);
+            return $this->json(null, 204);
+        }
+
+        /**
+         * @Route("/{clubId}/coaches/{coachId}", methods={"DELETE"})
+         */
+        public function removeCoachFromClub(int $clubId, int $coachId, ClubService $clubService): JsonResponse
+        {
+            $clubService->removeCoachFromClub($clubId, $coachId);
+            return $this->json(null, 204);
+        }
+
+        /**
+         * @Route("/{id}/players", methods={"GET"})
+         */
+        public function listClubPlayers(int $id, Request $request, ClubService $clubService): JsonResponse {
+            $filter = $request->query->get('name');
+            $page = $request->query->getInt('page', 1);
+            $limit = $request->query->getInt('limit', 10);
+            
+            $result = $clubService->getClubPlayers($id, $filter, $page, $limit);
+            
+            return $this->json([
+                'data' => $result['players'],
+                'total' => $result['total'],
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        }
+    }
+
+
+
+# /src/Service/ClubService.php
+
+    namespace App\Service;
+
+    use App\Entity\Club;
+    use App\Repository\ClubRepository;
+    use App\Repository\PlayerRepository;
+    use App\Repository\CoachRepository;
+    use App\Exception\InsufficientBudgetException;
+    use App\Exception\AlreadyInClubException;
+    use Doctrine\ORM\EntityManagerInterface;
+    use Symfony\Component\Validator\Validator\ValidatorInterface;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+    class ClubService
+    {
+        private $entityManager;
+        private $clubRepository;
+        private $playerRepository;
+        private $coachRepository;
+
+        public function __construct(
+            EntityManagerInterface $entityManager,
+            ClubRepository $clubRepository,
+            PlayerRepository $playerRepository,
+            CoachRepository $coachRepository,
+            private ValidatorInterface $validator
+        ) {
+            $this->entityManager = $entityManager;
+            $this->clubRepository = $clubRepository;
+            $this->playerRepository = $playerRepository;
+            $this->coachRepository = $coachRepository;
+        }
+
+        public function createClub(Club $club): Club
+        {
+            $this->entityManager->persist($club);
+            $this->entityManager->flush();
+            return $club;
+        }
+
+        private function calculateTotalSalaries(Club $club): float
+        {
+            $total = 0;
+
+            foreach ($club->getPlayers() as $player) {
+                $total += $player->getSalary();
+            }
+
+            foreach ($club->getCoaches() as $coach) {
+                $total += $coach->getSalary();
+            }
+
+            return $total;
+        }
+
+        public function addPlayerToClub(int $clubId, int $playerId, float $salary): void
+        {
+            $club = $this->clubRepository->find($clubId);
+            if (!$club) {
+                throw new NotFoundHttpException("Club no encontrado");
+            }
+
+            $player = $this->playerRepository->find($playerId);
+            if (!$player) {
+                throw new NotFoundHttpException("Jugador no encontrado");
+            }
+
+            $club = $this->clubRepository->find($clubId);
+            $player = $this->playerRepository->find($playerId);
+
+            if ($player->getClub()) {
+                throw new AlreadyInClubException();
+            }
+
+            $player->setClub($club);
+            $player->setSalary($salary);
+
+            $errors = $this->validator->validate($player, null, ['Club']);
+            if (count($errors) > 0) {
+                throw new \InvalidArgumentException((string) $errors);
+            }
+
+            $totalSalaries = $this->calculateTotalSalaries($club) + $salary;
+            if ($totalSalaries > $club->getBudget()) {
+                throw new InsufficientBudgetException();
+            }
+
+            $this->entityManager->flush();
+        }
+
+        public function addCoachToClub(int $clubId, int $coachId, float $salary): void
+        {
+            $club = $this->clubRepository->find($clubId);
+            $coach = $this->coachRepository->find($coachId);
+
+            if ($coach->getClub()) {
+                throw new AlreadyInClubException();
+            }
+
+            $coach->setClub($club);
+            $coach->setSalary($salary);
+
+            $errors = $this->validator->validate($coach, null, ['Club']);
+            if (count($errors) > 0) {
+                throw new \InvalidArgumentException((string) $errors);
+            }
+
+            $totalSalaries = $this->calculateTotalSalaries($club) + $salary;
+            if ($totalSalaries > $club->getBudget()) {
+                throw new InsufficientBudgetException();
+            }
+
+            $this->entityManager->flush();
+        }
+
+        public function removePlayerFromClub(int $clubId, int $playerId): void
+        {
+            $club = $this->clubRepository->find($clubId);
+            $player = $this->playerRepository->find($playerId);
+
+            if ($player->getClub() !== $club) {
+                throw new \InvalidArgumentException("El jugador no pertenece a este club");
+            }
+
+            $player->setClub(null);
+            $player->setSalary(0);
+            $this->entityManager->flush();
+        }
+
+        public function removeCoachFromClub(int $clubId, int $coachId): void
+        {
+            $club = $this->clubRepository->find($clubId);
+            $coach = $this->coachRepository->find($coachId);
+
+            if ($coach->getClub() !== $club) {
+                throw new \InvalidArgumentException("El entrenador no pertenece a este club");
+            }
+
+            $coach->setClub(null);
+            $coach->setSalary(0);
+            $this->entityManager->flush();
+        }
+
+        public function getClubPlayers(int $clubId, ?string $filter, int $page, int $limit): array
+        {
+            $club = $this->clubRepository->find($clubId);
+
+            return $this->playerRepository->findByClubWithFilter(
+                $club,
+                $filter,
+                $page,
+                $limit
+            );
+        }
+
+        public function updateClubBudget(int $clubId, float $newBudget): void
+        {
+            if ($newBudget < 0) {
+                throw new \InvalidArgumentException("El presupuesto no puede ser negativo");
+            }
+
+            $club = $this->clubRepository->find($clubId);
+
+            $currentSalaries = $this->calculateTotalSalaries($club);
+
+            if ($newBudget < $currentSalaries) {
+                throw new InsufficientBudgetException(
+                    "El nuevo presupuesto no puede ser menor a los salarios actuales ($currentSalaries)"
+                );
+            }
+
+            $club->setBudget($newBudget);
+            $this->entityManager->flush();
+        }
+    }
+
+
+
+# /src/Entity/Player.php
+
+    namespace App\Entity;
+
+    use App\Repository\PlayerRepository;
+    use Doctrine\ORM\Mapping as ORM;
+    use Symfony\Component\Validator\Constraints as Assert;
+
+    /**
+     * @ORM\Entity(repositoryClass=PlayerRepository::class)
+     */
+    class Player
+    {
+        /**
+         * @ORM\Id
+         * @ORM\GeneratedValue
+         * @ORM\Column(type="integer")
+         */
+        private $id;
+
+        /**
+         * @ORM\Column(type="string", length=255)
+         * @Assert\NotBlank(message="El nombre no puede estar vacío")
+         * @Assert\Length(
+         *     min=2,
+         *     max=255,
+         *     minMessage="El nombre debe tener al menos {{ limit }} caracteres",
+         *     maxMessage="El nombre no puede tener más de {{ limit }} caracteres"
+         * )
+         */
+        private $name;
+
+        /**
+         * @ORM\Column(type="integer")
+         * @Assert\NotBlank(message="La edad no puede estar vacía")
+         * @Assert\Range(
+         *     min=16,
+         *     max=50,
+         *     notInRangeMessage="La edad debe estar entre {{ min }} y {{ max }} años"
+         * )
+         */
+        private $age;
+
+        /**
+         * @ORM\Column(type="float")
+         * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
+         * @Assert\Positive(groups={"Club"}, message="El salario debe ser un número positivo")
+         */
+        private $salary;
+
+        /**
+         * @ORM\ManyToOne(targetEntity=Club::class, inversedBy="players")
+         */
+        private $club;
+
+        // Getters and setters
+        public function getId(): ?int
+        {
+            return $this->id;
+        }
+
+        public function getName(): ?string
+        {
+            return $this->name;
+        }
+
+        public function setName(string $name): self
+        {
+            $this->name = $name;
+
+            return $this;
+        }
+
+        public function getAge(): ?int
+        {
+            return $this->age;
+        }
+
+        public function setAge(int $age): self
+        {
+            $this->age = $age;
+
+            return $this;
+        }
+
+        public function getSalary(): ?float
+        {
+            return $this->salary;
+        }
+
+        public function setSalary(float $salary): self
+        {
+            $this->salary = $salary;
+
+            return $this;
+        }
+
+        public function getClub(): ?Club
+        {
+            return $this->club;
+        }
+
+        public function setClub(?Club $club): self
+        {
+            $this->club = $club;
+
+            return $this;
+        }
+    }
+
+
+# /src/Controller/PlayerController.php
+
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\JsonResponse;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\Routing\Annotation\Route;
+    use Symfony\Component\Validator\Validator\ValidatorInterface;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+    use App\Service\PlayerService;
+    use App\Entity\Player;
+
+    /**
+     * @Route("/api/players")
+     */
+    class PlayerController extends AbstractController
+    {
+        /**
+         * @Route("", methods={"POST"})
+         */
+        public function createPlayer(
+            Request $request,
+            PlayerService $playerService,
+            ValidatorInterface $validator
+        ): JsonResponse {
+            $data = json_decode($request->getContent(), true);
+
+            $player = new Player();
+            $player->setName($data['name'] ?? '');
+            $player->setAge($data['age'] ?? 0);
+            $player->setSalary($data['salary'] ?? 0);
+
+            $errors = $validator->validate($player, null, $player->getClub() ? ['Club'] : []);
+
+            if (count($errors) > 0) {
+                return $this->json(['errors' => $this->formatErrors($errors)], 400);
+            }
+
+            $playerService->createPlayer($player);
+
+            return $this->json($player, 201);
+        }
+
+        /**
+         * @Route("", methods={"GET"})
+         */
+        public function listPlayers(Request $request, PlayerService $playerService): JsonResponse
+        {
+            $page = $request->query->getInt('page', 1);
+            $limit = $request->query->getInt('limit', 33);
+
+            $result = $playerService->getAllPlayers($page, $limit);
+
+            return $this->json([
+                'data' => $result['players'],
+                'total' => $result['total'],
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        }
+
+        /**
+         * @Route("/{id}", methods={"GET"})
+         */
+        public function getPlayerDetails(int $id, PlayerService $playerService): JsonResponse
+        {
+            $player = $playerService->getPlayerById($id);
+
+            if (!$player) {
+                return $this->json(['error' => 'Jugador no encontrado'], 404);
+            }
+
+            return $this->json($player);
+        }
+
+        private function formatErrors($errors): array
+        {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return $errorMessages;
+        }
+
+        /**
+         * @Route("/{id}", methods={"DELETE"})
+         */
+        public function deletePlayer(int $id, PlayerService $playerService): JsonResponse
+        {
+            try {
+                $playerService->deletePlayer($id);
+                return $this->json(null, 204);
+            } catch (NotFoundHttpException $e) {
+                return $this->json(['error' => $e->getMessage()], 404);
+            }
+        }
+    }
+
+# /src/Service/PlayerService.php
+
+    namespace App\Service;
+
+    use App\Entity\Player;
+    use App\Repository\PlayerRepository;
+    use Doctrine\ORM\EntityManagerInterface;
+    use Doctrine\ORM\Tools\Pagination\Paginator;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+    class PlayerService
+    {
+        public function __construct(
+            private EntityManagerInterface $entityManager,
+            private PlayerRepository $playerRepository
+        ) {}
+
+        public function createPlayer(Player $player): Player
+        {
+            $this->entityManager->persist($player);
+            $this->entityManager->flush();
+            return $player;
+        }
+
+        public function getAllPlayers(int $page, int $limit): array
+        {
+            $query = $this->playerRepository->createQueryBuilder('p')
+                ->orderBy('p.name', 'ASC')
+                ->getQuery()
+                ->setFirstResult(($page - 1) * $limit)
+                ->setMaxResults($limit);
+
+            $paginator = new Paginator($query);
+            $total = count($paginator);
+
+            return [
+                'players' => iterator_to_array($paginator->getIterator()),
+                'total' => $total
+            ];
+        }
+
+        public function getPlayerById(int $id): ?Player
+        {
+            return $this->playerRepository->find($id);
+        }
+
+        public function deletePlayer(int $id): void
+        {
+            $player = $this->playerRepository->find($id);
+
+            if (!$player) {
+                throw new NotFoundHttpException("Jugador no encontrado");
+            }
+
+            $this->entityManager->remove($player);
+            $this->entityManager->flush();
+        }
+    }
+
+
+
+# /src/Entity/Coach.php
+
+    namespace App\Entity;
+
+    use App\Repository\CoachRepository;
+    use Doctrine\ORM\Mapping as ORM;
+    use Symfony\Component\Validator\Constraints as Assert;
+
+    /**
+     * @ORM\Entity(repositoryClass=CoachRepository::class)
+     */
+    class Coach
+    {
+        /**
+         * @ORM\Id
+         * @ORM\GeneratedValue
+         * @ORM\Column(type="integer")
+         */
+        private $id;
+
+        /**
+         * @ORM\Column(type="string", length=255)
+         * @Assert\NotBlank(message="El nombre no puede estar vacío")
+         * @Assert\Length(
+         *     min=2,
+         *     max=255,
+         *     minMessage="El nombre debe tener al menos {{ limit }} caracteres",
+         *     maxMessage="El nombre no puede tener más de {{ limit }} caracteres"
+         * )
+         */
+        private $name;
+
+        /**
+         * @ORM\Column(type="integer")
+         * @Assert\NotBlank(message="La edad no puede estar vacía")
+         * @Assert\Range(
+         *     min=25,
+         *     max=70,
+         *     notInRangeMessage="La edad debe estar entre {{ min }} y {{ max }} años"
+         * )
+         */
+        private $age;
+
+        /**
+         * @ORM\Column(type="float")
+         * @Assert\Positive(groups={"Club"}, message="El salario debe ser positivo")
+         * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
+         */
+        private $salary;
+
+        /**
+         * @ORM\ManyToOne(targetEntity=Club::class, inversedBy="coaches")
+         */
+        private $club;
+
+        // Getters and setters
+        public function getId(): ?int
+        {
+            return $this->id;
+        }
+
+        public function getName(): ?string
+        {
+            return $this->name;
+        }
+
+        public function setName(string $name): self
+        {
+            $this->name = $name;
+
+            return $this;
+        }
+
+        public function getAge(): ?int
+        {
+            return $this->age;
+        }
+
+        public function setAge(int $age): self
+        {
+            $this->age = $age;
+
+            return $this;
+        }
+
+        public function getSalary(): ?float
+        {
+            return $this->salary;
+        }
+
+        public function setSalary(float $salary): self
+        {
+            $this->salary = $salary;
+
+            return $this;
+        }
+
+        public function getClub(): ?Club
+        {
+            return $this->club;
+        }
+
+        public function setClub(?Club $club): self
+        {
+            $this->club = $club;
+
+            return $this;
+        }
+    }
+
+
+
+
+# /src/Controller/CoachController.php
+
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\JsonResponse;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\Routing\Annotation\Route;
+    use Symfony\Component\Validator\Validator\ValidatorInterface;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+    use App\Service\CoachService;
+    use App\Entity\Coach;
+
+    /**
+     * @Route("/api/coaches")
+     */
+    class CoachController extends AbstractController
+    {
+        /**
+         * @Route("", methods={"POST"})
+         */
+        public function createCoach(
+            Request $request,
+            CoachService $coachService,
+            ValidatorInterface $validator
+        ): JsonResponse {
+            $data = json_decode($request->getContent(), true);
+
+            $coach = new Coach();
+            $coach->setName($data['name'] ?? '');
+            $coach->setAge($data['age'] ?? 0);
+            $coach->setSalary($data['salary'] ?? 0);
+
+            $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
+
+            if (count($errors) > 0) {
+                return $this->json(['errors' => $this->formatErrors($errors)], 400);
+            }
+
+            $coachService->createCoach($coach);
+
+            return $this->json($coach, 201);
+        }
+
+        /**
+         * @Route("", methods={"GET"})
+         */
+        public function listCoaches(Request $request, CoachService $coachService): JsonResponse
+        {
+            $page = $request->query->getInt('page', 1);
+            $limit = $request->query->getInt('limit', 10);
+
+            $result = $coachService->getAllCoaches($page, $limit);
+
+            return $this->json([
+                'data' => $result['coaches'],
+                'total' => $result['total'],
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        }
+
+        /**
+         * @Route("/{id}", methods={"GET"})
+         */
+        public function getCoachDetails(int $id, CoachService $coachService): JsonResponse
+        {
+            $coach = $coachService->getCoachById($id);
+
+            if (!$coach) {
+                return $this->json(['error' => 'Entrenador no encontrado'], 404);
+            }
+
+            return $this->json($coach);
+        }
+
+        private function formatErrors($errors): array
+        {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return $errorMessages;
+        }
+
+        // src/Controller/CoachController.php
+        /**
+         * @Route("/{id}", methods={"DELETE"})
+         */
+        public function deleteCoach(int $id, CoachService $coachService): JsonResponse
+        {
+            try {
+                $coachService->deleteCoach($id);
+                return $this->json(null, 204);
+            } catch (NotFoundHttpException $e) {
+                return $this->json(['error' => $e->getMessage()], 404);
+            }
+        }
+    }
+
+# /src/Service/CoachService.php
+
+    namespace App\Service;
+
+    use App\Entity\Coach;
+    use App\Repository\CoachRepository;
+    use Doctrine\ORM\EntityManagerInterface;
+    use Doctrine\ORM\Tools\Pagination\Paginator;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+    class CoachService
+    {
+        public function __construct(
+            private EntityManagerInterface $entityManager,
+            private CoachRepository $coachRepository
+        ) {}
+
+        public function createCoach(Coach $coach): Coach
+        {
+            $this->entityManager->persist($coach);
+            $this->entityManager->flush();
+            return $coach;
+        }
+
+        public function getAllCoaches(int $page, int $limit): array
+        {
+            $query = $this->coachRepository->createQueryBuilder('c')
+                ->orderBy('c.name', 'ASC')
+                ->getQuery()
+                ->setFirstResult(($page - 1) * $limit)
+                ->setMaxResults($limit);
+
+            $paginator = new Paginator($query);
+            $total = count($paginator);
+
+            return [
+                'coaches' => iterator_to_array($paginator->getIterator()),
+                'total' => $total
+            ];
+        }
+
+        public function getCoachById(int $id): ?Coach
+        {
+            return $this->coachRepository->find($id);
+        }
+
+        public function deleteCoach(int $id): void
+        {
+            $coach = $this->coachRepository->find($id);
+
+            if (!$coach) {
+                throw new NotFoundHttpException("Entrenador no encontrado");
+            }
+
+            $this->entityManager->remove($coach);
+            $this->entityManager->flush();
+        }
+    }
+
+
+
+# /src/Exception/AlreadyInClubException.php
+
+    namespace App\Exception;
+
+    use Symfony\Component\HttpKernel\Exception\HttpException;
+
+    class AlreadyInClubException extends HttpException
+    {
+        public function __construct(string $message = 'El jugador/entrenador ya pertenece a un club')
+        {
+            parent::__construct(409, $message); // 409 Conflict
+        }
+    }
+# /src/Exception/InsufficientBudgetException.php
+
+    namespace App\Exception;
+
+    use Symfony\Component\HttpKernel\Exception\HttpException;
+
+    class InsufficientBudgetException extends HttpException
+    {
+        public function __construct(string $message = 'Presupuesto insuficiente')
+        {
+            parent::__construct(400, $message); // 400 Bad Request
+        }
+    }
+
+
+

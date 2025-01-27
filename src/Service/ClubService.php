@@ -3,8 +3,6 @@
 namespace App\Service;
 
 use App\Entity\Club;
-use App\Entity\Player;
-use App\Entity\Coach;
 use App\Repository\ClubRepository;
 use App\Repository\PlayerRepository;
 use App\Repository\CoachRepository;

@@ -35,7 +35,7 @@ class Coach
      * @Assert\NotBlank(message="La edad no puede estar vacía")
      * @Assert\Range(
      *     min=25,
-     *     max=70,
+     *     max=90,
      *     notInRangeMessage="La edad debe estar entre {{ min }} y {{ max }} años"
      * )
      */
