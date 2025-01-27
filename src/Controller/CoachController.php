@@ -28,18 +28,11 @@ class CoachController extends AbstractController
 
         $coach = new Coach();
         $coach->setName($data['name'] ?? '');
-<<<<<<< Updated upstream
-        $coach->setSalary(0); // Salario inicial 0 (sin club)
-        
-        $errors = $validator->validate($coach);
-        
-=======
         $coach->setAge($data['age'] ?? 0);
         $coach->setSalary($data['salary'] ?? 0);
 
         $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
 
->>>>>>> Stashed changes
         if (count($errors) > 0) {
             return $this->json(['errors' => $this->formatErrors($errors)], 400);
         }

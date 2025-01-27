@@ -28,18 +28,11 @@ class PlayerController extends AbstractController
 
         $player = new Player();
         $player->setName($data['name'] ?? '');
-<<<<<<< Updated upstream
-        $player->setSalary(0); // Salario inicial 0 (sin club)
-        
-        $errors = $validator->validate($player);
-        
-=======
         $player->setAge($data['age'] ?? 0);
         $player->setSalary($data['salary'] ?? 0);
 
         $errors = $validator->validate($player, null, $player->getClub() ? ['Club'] : []);
 
->>>>>>> Stashed changes
         if (count($errors) > 0) {
             return $this->json(['errors' => $this->formatErrors($errors)], 400);
         }
@@ -55,13 +48,8 @@ class PlayerController extends AbstractController
     public function listPlayers(Request $request, PlayerService $playerService): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
-<<<<<<< Updated upstream
-        $limit = $request->query->getInt('limit', 10);
-        
-=======
         $limit = $request->query->getInt('limit', 33);
 
->>>>>>> Stashed changes
         $result = $playerService->getAllPlayers($page, $limit);
 
         return $this->json([
