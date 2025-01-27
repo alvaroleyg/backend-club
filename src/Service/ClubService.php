@@ -56,6 +56,26 @@ class ClubService
         $this->entityManager->flush();
     }
 
+    public function addCoachToClub(int $clubId, int $coachId, float $salary): void
+    {
+        $club = $this->clubRepository->find($clubId);
+        $coach = $this->coachRepository->find($coachId);
+
+        if ($coach->getClub()) {
+            throw new AlreadyInClubException();
+        }
+
+        $totalSalaries = $club->calculateTotalSalaries() + $salary;
+
+        if ($totalSalaries > $club->getBudget()) {
+            throw new InsufficientBudgetException();
+        }
+
+        $coach->setClub($club);
+        $coach->setSalary($salary);
+        $this->entityManager->flush();
+    }
+
     private function calculateTotalSalaries(Club $club): float
     {
         $total = 0;
@@ -88,26 +108,6 @@ class ClubService
         }
 
         $club->setBudget($newBudget);
-        $this->entityManager->flush();
-    }
-
-    public function addCoachToClub(int $clubId, int $coachId, float $salary): void
-    {
-        $club = $this->clubRepository->find($clubId);
-        $coach = $this->coachRepository->find($coachId);
-
-        if ($coach->getClub()) {
-            throw new AlreadyInClubException();
-        }
-
-        $totalSalaries = $club->calculateTotalSalaries() + $salary;
-
-        if ($totalSalaries > $club->getBudget()) {
-            throw new InsufficientBudgetException();
-        }
-
-        $coach->setClub($club);
-        $coach->setSalary($salary);
         $this->entityManager->flush();
     }
 
@@ -150,5 +150,4 @@ class ClubService
             $limit
         );
     }
-    // Métodos similares para entrenadores y otras operaciones...
 }
