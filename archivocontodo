@@ -150,16 +150,17 @@
             $total = 0;
 
             foreach ($this->players as $player) {
-                $total += $player->getSalary();
+                $total += $player->getSalary() ?? 0;
             }
 
             foreach ($this->coaches as $coach) {
-                $total += $coach->getSalary();
+                $total += $coach->getSalary() ?? 0;
             }
 
             return $total;
         }
     }
+
 
 
 
@@ -174,6 +175,8 @@
     use Symfony\Component\Validator\Validator\ValidatorInterface;
     use App\Service\ClubService;
     use App\Entity\Club;
+    use App\Exception\AlreadyInClubException;
+    use App\Exception\InsufficientBudgetException;
 
     /**
      * @Route("/api/clubs")
@@ -183,14 +186,17 @@
         /**
          * @Route("", methods={"POST"})
          */
-        public function createClub(Request $request, ClubService $clubService, ValidatorInterface $validator): JsonResponse {
+        public function createClub(
+            Request $request, 
+            ClubService $clubService,
+            ValidatorInterface $validator
+        ): JsonResponse {
             $data = json_decode($request->getContent(), true);
             
             $club = new Club();
             $club->setName($data['name'] ?? '');
             $club->setBudget($data['budget'] ?? 0);
             
-            // Validar la entidad
             $errors = $validator->validate($club);
             
             if (count($errors) > 0) {
@@ -213,11 +219,19 @@
         {
             $data = json_decode($request->getContent(), true);
             
-            $clubService->addPlayerToClub(
-                $id,
-                $data['playerId'],
-                $data['salary']
-            );
+            try {
+                $clubService->addPlayerToClub(
+                    $id,
+                    $data['playerId'],
+                    $data['salary']
+                );
+            } catch (AlreadyInClubException $e) {
+                return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+            } catch (InsufficientBudgetException $e) {
+                return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error inesperado'], 500);
+            }
             
             return $this->json(null, 204);
         }
@@ -228,12 +242,20 @@
         public function addCoachToClub(int $id, Request $request, ClubService $clubService): JsonResponse
         {
             $data = json_decode($request->getContent(), true);
-            
-            $clubService->addCoachToClub(
-                $id,
-                $data['coachId'],
-                $data['salary']
-            );
+
+            try {
+                $clubService->addCoachToClub(
+                    $id,
+                    $data['coachId'],
+                    $data['salary']
+                );
+            } catch (AlreadyInClubException $e) {
+                return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+            } catch (InsufficientBudgetException $e) {
+                return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error inesperado'], 500);
+            }
             
             return $this->json(null, 204);
         }
@@ -241,16 +263,20 @@
         /**
          * @Route("/{id}/budget", methods={"PATCH"})
          */
-        public function updateClubBudget(int $id, Request $request, ClubService $clubService): JsonResponse
+        public function updateClubBudget(int $id, ClubService $clubService): JsonResponse
         {
-            $data = json_decode($request->getContent(), true);
-            
-            $clubService->updateClubBudget(
-                $id,
-                $data['newBudget']
-            );
-            
-            return $this->json(null, 204);
+            try {
+                $updatedBudget = $clubService->updateClubBudget($id);
+            } catch (\InvalidArgumentException $e) {
+                return $this->json(['error' => $e->getMessage()], 404);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error inesperado'], 500);
+            }
+        
+            return $this->json([
+                'message' => 'El presupuesto ha sido actualizado.',
+                'currentBudget' => $updatedBudget
+            ], 200);
         }
 
         /**
@@ -258,8 +284,14 @@
          */
         public function removePlayerFromClub(int $clubId, int $playerId, ClubService $clubService): JsonResponse
         {
-            $clubService->removePlayerFromClub($clubId, $playerId);
-            return $this->json(null, 204);
+            try {
+                $clubService->removePlayerFromClub($clubId, $playerId);
+                return $this->json(['message' => 'Jugador eliminado exitosamente'], 200);
+            } catch (\InvalidArgumentException $e) {
+                return $this->json(['error' => $e->getMessage()], 404);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error inesperado'], 500);
+            }
         }
 
         /**
@@ -267,14 +299,24 @@
          */
         public function removeCoachFromClub(int $clubId, int $coachId, ClubService $clubService): JsonResponse
         {
-            $clubService->removeCoachFromClub($clubId, $coachId);
-            return $this->json(null, 204);
+            try {
+                $clubService->removeCoachFromClub($clubId, $coachId);
+                return $this->json(['message' => 'Entrenador eliminado exitosamente'], 200);
+            } catch (\InvalidArgumentException $e) {
+                return $this->json(['error' => $e->getMessage()], 404);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error inesperado'], 500);
+            }
         }
 
         /**
          * @Route("/{id}/players", methods={"GET"})
          */
-        public function listClubPlayers(int $id, Request $request, ClubService $clubService): JsonResponse {
+        public function listClubPlayers(
+            int $id,
+            Request $request,
+            ClubService $clubService
+        ): JsonResponse {
             $filter = $request->query->get('name');
             $page = $request->query->getInt('page', 1);
             $limit = $request->query->getInt('limit', 10);
@@ -375,34 +417,32 @@
             $total = 0;
 
             foreach ($club->getPlayers() as $player) {
-                $total += $player->getSalary();
+                $total += $player->getSalary() ?? 0;
             }
 
             foreach ($club->getCoaches() as $coach) {
-                $total += $coach->getSalary();
+                $total += $coach->getSalary() ?? 0;
             }
 
             return $total;
         }
 
-        public function updateClubBudget(int $clubId, float $newBudget): void
+        public function updateClubBudget(int $clubId): float
         {
-            if ($newBudget < 0) {
-                throw new \InvalidArgumentException("El presupuesto no puede ser negativo");
-            }
-
             $club = $this->clubRepository->find($clubId);
 
-            $currentSalaries = $this->calculateTotalSalaries($club);
-
-            if ($newBudget < $currentSalaries) {
-                throw new InsufficientBudgetException(
-                    "El nuevo presupuesto no puede ser menor a los salarios actuales ($currentSalaries)"
-                );
+            if (!$club) {
+                throw new \InvalidArgumentException("Club no encontrado");
             }
+
+            $clubBudget = $club->getBudget();
+            $currentSalaries = $this->calculateTotalSalaries($club);
+            $newBudget = $clubBudget - $currentSalaries;
 
             $club->setBudget($newBudget);
             $this->entityManager->flush();
+
+            return $newBudget;
         }
 
         public function removePlayerFromClub(int $clubId, int $playerId): void
@@ -481,7 +521,7 @@
         private $name;
 
         /**
-         * @ORM\Column(type="integer")
+         * @ORM\Column(type="integer", nullable=true)
          * @Assert\NotBlank(message="La edad no puede estar vacía")
          * @Assert\Range(
          *     min=16,
@@ -492,7 +532,7 @@
         private $age;
 
         /**
-         * @ORM\Column(type="float")
+         * @ORM\Column(type="float", nullable=true)
          * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
          * @Assert\Positive(groups={"Club"}, message="El salario debe ser un número positivo")
          */
@@ -589,8 +629,8 @@
 
             $player = new Player();
             $player->setName($data['name'] ?? '');
-            $player->setAge($data['age'] ?? 0);
-            $player->setSalary($data['salary'] ?? 0);
+            $player->setAge($data['age'] ?? null);
+            $player->setSalary($data['salary'] ?? null);
 
             $errors = $validator->validate($player, null, $player->getClub() ? ['Club'] : []);
 
@@ -752,7 +792,7 @@
         private $name;
 
         /**
-         * @ORM\Column(type="integer")
+         * @ORM\Column(type="integer", nullable=true)
          * @Assert\NotBlank(message="La edad no puede estar vacía")
          * @Assert\Range(
          *     min=25,
@@ -763,7 +803,7 @@
         private $age;
 
         /**
-         * @ORM\Column(type="float")
+         * @ORM\Column(type="float", nullable=true)
          * @Assert\Positive(groups={"Club"}, message="El salario debe ser positivo")
          * @Assert\NotNull(groups={"Club"}, message="El salario no puede estar vacío")
          */
@@ -862,8 +902,8 @@
 
             $coach = new Coach();
             $coach->setName($data['name'] ?? '');
-            $coach->setAge($data['age'] ?? 0);
-            $coach->setSalary($data['salary'] ?? 0);
+            $coach->setAge($data['age'] ?? null);
+            $coach->setSalary($data['salary'] ?? null);
 
             $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
 

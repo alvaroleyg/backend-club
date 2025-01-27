@@ -81,34 +81,32 @@ class ClubService
         $total = 0;
 
         foreach ($club->getPlayers() as $player) {
-            $total += $player->getSalary();
+            $total += $player->getSalary() ?? 0;
         }
 
         foreach ($club->getCoaches() as $coach) {
-            $total += $coach->getSalary();
+            $total += $coach->getSalary() ?? 0;
         }
 
         return $total;
     }
 
-    public function updateClubBudget(int $clubId, float $newBudget): void
+    public function updateClubBudget(int $clubId): float
     {
-        if ($newBudget < 0) {
-            throw new \InvalidArgumentException("El presupuesto no puede ser negativo");
-        }
-
         $club = $this->clubRepository->find($clubId);
 
-        $currentSalaries = $this->calculateTotalSalaries($club);
-
-        if ($newBudget < $currentSalaries) {
-            throw new InsufficientBudgetException(
-                "El nuevo presupuesto no puede ser menor a los salarios actuales ($currentSalaries)"
-            );
+        if (!$club) {
+            throw new \InvalidArgumentException("Club no encontrado");
         }
+
+        $clubBudget = $club->getBudget();
+        $currentSalaries = $this->calculateTotalSalaries($club);
+        $newBudget = $clubBudget - $currentSalaries;
 
         $club->setBudget($newBudget);
         $this->entityManager->flush();
+
+        return $newBudget;
     }
 
     public function removePlayerFromClub(int $clubId, int $playerId): void

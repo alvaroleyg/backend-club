@@ -148,11 +148,11 @@ class Club
         $total = 0;
 
         foreach ($this->players as $player) {
-            $total += $player->getSalary();
+            $total += $player->getSalary() ?? 0;
         }
 
         foreach ($this->coaches as $coach) {
-            $total += $coach->getSalary();
+            $total += $coach->getSalary() ?? 0;
         }
 
         return $total;

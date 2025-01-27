@@ -1,6 +1,5 @@
 <?php
 
-// src/Controller/ClubController.php
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -10,6 +9,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Service\ClubService;
 use App\Entity\Club;
+use App\Exception\AlreadyInClubException;
+use App\Exception\InsufficientBudgetException;
 
 /**
  * @Route("/api/clubs")
@@ -30,7 +31,6 @@ class ClubController extends AbstractController
         $club->setName($data['name'] ?? '');
         $club->setBudget($data['budget'] ?? 0);
         
-        // Validar la entidad
         $errors = $validator->validate($club);
         
         if (count($errors) > 0) {
@@ -53,11 +53,19 @@ class ClubController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
         
-        $clubService->addPlayerToClub(
-            $id,
-            $data['playerId'],
-            $data['salary']
-        );
+        try {
+            $clubService->addPlayerToClub(
+                $id,
+                $data['playerId'],
+                $data['salary']
+            );
+        } catch (AlreadyInClubException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (InsufficientBudgetException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error inesperado'], 500);
+        }
         
         return $this->json(null, 204);
     }
@@ -68,12 +76,20 @@ class ClubController extends AbstractController
     public function addCoachToClub(int $id, Request $request, ClubService $clubService): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        
-        $clubService->addCoachToClub(
-            $id,
-            $data['coachId'],
-            $data['salary']
-        );
+
+        try {
+            $clubService->addCoachToClub(
+                $id,
+                $data['coachId'],
+                $data['salary']
+            );
+        } catch (AlreadyInClubException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (InsufficientBudgetException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error inesperado'], 500);
+        }
         
         return $this->json(null, 204);
     }
@@ -81,16 +97,20 @@ class ClubController extends AbstractController
     /**
      * @Route("/{id}/budget", methods={"PATCH"})
      */
-    public function updateClubBudget(int $id, Request $request, ClubService $clubService): JsonResponse
+    public function updateClubBudget(int $id, ClubService $clubService): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        
-        $clubService->updateClubBudget(
-            $id,
-            $data['newBudget']
-        );
-        
-        return $this->json(null, 204);
+        try {
+            $updatedBudget = $clubService->updateClubBudget($id);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error inesperado'], 500);
+        }
+    
+        return $this->json([
+            'message' => 'El presupuesto ha sido actualizado.',
+            'currentBudget' => $updatedBudget
+        ], 200);
     }
 
     /**
@@ -98,8 +118,14 @@ class ClubController extends AbstractController
      */
     public function removePlayerFromClub(int $clubId, int $playerId, ClubService $clubService): JsonResponse
     {
-        $clubService->removePlayerFromClub($clubId, $playerId);
-        return $this->json(null, 204);
+        try {
+            $clubService->removePlayerFromClub($clubId, $playerId);
+            return $this->json(['message' => 'Jugador eliminado exitosamente'], 200);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error inesperado'], 500);
+        }
     }
 
     /**
@@ -107,8 +133,14 @@ class ClubController extends AbstractController
      */
     public function removeCoachFromClub(int $clubId, int $coachId, ClubService $clubService): JsonResponse
     {
-        $clubService->removeCoachFromClub($clubId, $coachId);
-        return $this->json(null, 204);
+        try {
+            $clubService->removeCoachFromClub($clubId, $coachId);
+            return $this->json(['message' => 'Entrenador eliminado exitosamente'], 200);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error inesperado'], 500);
+        }
     }
 
     /**
