@@ -125,23 +125,6 @@ class ClubService
 
         return $newBudget;
     }
-    // public function updateClubBudget(int $clubId): float
-    // {
-    //     $club = $this->clubRepository->find($clubId);
-
-    //     if (!$club) {
-    //         throw new ClubNotFoundException();
-    //     }
-
-    //     $clubBudget = $club->getBudget();
-    //     $currentSalaries = $this->calculateTotalSalaries($club);
-    //     $newBudget = $clubBudget - $currentSalaries;
-
-    //     $club->setBudget($newBudget);
-    //     $this->entityManager->flush();
-
-    //     return $newBudget;
-    // }
 
     public function removePlayerFromClub(int $clubId, int $playerId): void
     {

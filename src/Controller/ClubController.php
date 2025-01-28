@@ -114,21 +114,6 @@ class ClubController extends AbstractController
             'currentBudget' => $updatedBudget
         ]);
     }
-    // public function updateClubBudget(int $id, ClubService $clubService): JsonResponse
-    // {
-    //     try {
-    //         $updatedBudget = $clubService->updateClubBudget($id);
-    //     } catch (ClubNotFoundException $e) {
-    //         return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
-    //     } catch (\Exception $e) {
-    //         return $this->json(['error' => 'Error inesperado'], 500);
-    //     }
-
-    //     return $this->json([
-    //         'message' => 'El presupuesto ha sido actualizado.',
-    //         'currentBudget' => $updatedBudget
-    //     ], 200);
-    // }
 
     /**
      * @Route("/{clubId}/players/{playerId}", methods={"DELETE"}, name="remove_player_from_club")

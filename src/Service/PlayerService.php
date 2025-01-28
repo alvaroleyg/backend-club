@@ -5,9 +5,6 @@ namespace App\Service;
 use App\Entity\Player;
 use App\Repository\PlayerRepository;
 use Doctrine\ORM\EntityManagerInterface;
-// use Doctrine\ORM\Tools\Pagination\Paginator;
-// use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-// use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use App\Exception\PlayerNotFoundException;
 
 
@@ -20,11 +17,9 @@ class PlayerService
     public function __construct(
         EntityManagerInterface $entityManager,
         PlayerRepository $playerRepository,
-        // NormalizerInterface $normalizer
     ) {
         $this->entityManager = $entityManager;
         $this->playerRepository = $playerRepository;
-        // $this->normalizer = $normalizer;
     }
 
     public function createPlayer(Player $player): Player
