@@ -105,7 +105,7 @@ class ClubService
         return $total;
     }
 
-    public function updateClubBudget(int $clubId, float $delta): float
+    public function updateClubBudget(int $clubId, float $salaryImpact): float
     {
         $club = $this->clubRepository->find($clubId);
 
@@ -114,7 +114,7 @@ class ClubService
         }
 
         $currentBudget = $club->getBudget();
-        $newBudget = $currentBudget + $delta;
+        $newBudget = $currentBudget + $salaryImpact;
 
         if ($newBudget < 0) {
             throw new \Exception('El presupuesto no puede ser negativo.');

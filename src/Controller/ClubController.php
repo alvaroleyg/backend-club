@@ -95,10 +95,10 @@ class ClubController extends AbstractController
     public function updateClubBudget(int $id, Request $request, ClubService $clubService): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        $delta = $data['delta'] ?? null;
+        $delta = $data['salaryImpact'] ?? null;
 
         if ($delta === null || !is_numeric($delta)) {
-            return $this->json(['error' => 'Se requiere el campo "delta" (número)'], 400);
+            return $this->json(['error' => "Introduce un campo 'salaryImpact' con la cantidad que deseas sumar o restar"], 400);
         }
 
         try {
