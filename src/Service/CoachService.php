@@ -45,6 +45,8 @@ class CoachService
 
         if (!$coach) {
             throw new CoachNotFoundException();
+        } else if ($coach->getClub() !== null) {
+            throw new \InvalidArgumentException('No se puede eliminar el entrenador porque pertenece a un club.');
         }
 
         $this->entityManager->remove($coach);

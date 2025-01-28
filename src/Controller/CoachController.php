@@ -73,6 +73,8 @@ class CoachController extends AbstractController
             return $this->json(['message' => 'Entrenador eliminado exitosamente'], 200);
         } catch (CoachNotFoundException $e) {
             return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
         }
     }
 

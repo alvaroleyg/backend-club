@@ -62,6 +62,8 @@ class PlayerController extends AbstractController
             return $this->json(['message' => 'Jugador eliminado exitosamente'], 200);
         } catch (PlayerNotFoundException $e) {
             return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
         }
     }
 

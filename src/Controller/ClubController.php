@@ -49,8 +49,21 @@ class ClubController extends AbstractController
     public function addPlayerToClub(int $clubId, int $playerId, ClubService $clubService): JsonResponse
     {
         try {
-            $clubService->addPlayerToClub($clubId, $playerId);
-            return $this->json(['message' => 'Jugador añadido al club exitosamente'], 200);
+            $result = $clubService->addPlayerToClub($clubId, $playerId);
+            return $this->json([
+                'message' => 'Jugador añadido al club exitosamente',
+                'player' => [
+                    'id' => $result['player']->getId(),
+                    'name' => $result['player']->getName(),
+                    'age' => $result['player']->getAge(),
+                    'salary' => $result['player']->getSalary()
+                ],
+                'club' => [
+                    'id' => $result['club']->getId(),
+                    'name' => $result['club']->getName(),
+                    'budget' => $result['club']->getBudget()
+                ]
+            ], 200);
         } catch (ClubNotFoundException $e) {
             return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
         } catch (PlayerNotFoundException $e) {
@@ -62,8 +75,6 @@ class ClubController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error inesperado'], 500);
         }
-
-        return $this->json(null, 204);
     }
 
     /**
@@ -72,8 +83,21 @@ class ClubController extends AbstractController
     public function addCoachToClub(int $clubId, int $coachId, ClubService $clubService): JsonResponse
     {
         try {
-            $clubService->addCoachToClub($clubId, $coachId);
-            return $this->json(['message' => 'Entrenador añadido al club exitosamente'], 200);
+            $result = $clubService->addCoachToClub($clubId, $coachId);
+            return $this->json([
+                'message' => 'Entrenador añadido al club exitosamente',
+                'coach' => [
+                    'id' => $result['coach']->getId(),
+                    'name' => $result['coach']->getName(),
+                    'age' => $result['coach']->getAge(),
+                    'salary' => $result['coach']->getSalary()
+                ],
+                'club' => [
+                    'id' => $result['club']->getId(),
+                    'name' => $result['club']->getName(),
+                    'budget' => $result['club']->getBudget()
+                ]
+            ], 200);
         } catch (ClubNotFoundException $e) {
             return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
         } catch (CoachNotFoundException $e) {
@@ -85,8 +109,6 @@ class ClubController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error inesperado'], 500);
         }
-
-        return $this->json(null, 204);
     }
 
     /**
@@ -95,16 +117,18 @@ class ClubController extends AbstractController
     public function updateClubBudget(int $id, Request $request, ClubService $clubService): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        $delta = $data['salaryImpact'] ?? null;
+        $change = $data['change'] ?? null;
 
-        if ($delta === null || !is_numeric($delta)) {
-            return $this->json(['error' => "Introduce un campo 'salaryImpact' con la cantidad que deseas sumar o restar"], 400);
+        if ($change === null || !is_numeric($change)) {
+            return $this->json(['error' => "Introduce un campo 'change' que indique la cantidad numérica que desees sumar o restar al presupuesto del club"], 400);
         }
 
         try {
-            $updatedBudget = $clubService->updateClubBudget($id, (float)$delta);
+            $updatedBudget = $clubService->updateClubBudget($id, (float)$change);
         } catch (ClubNotFoundException $e) {
             return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (InsufficientBudgetException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode()); 
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error inesperado'], 500);
         }

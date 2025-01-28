@@ -12,7 +12,6 @@ class PlayerService
 {
     private $entityManager;
     private $playerRepository;
-    // private $normalizer;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -43,6 +42,8 @@ class PlayerService
 
         if (!$player) {
             throw new PlayerNotFoundException();
+        } else if ($player->getClub() !== null) {
+            throw new \InvalidArgumentException('No se puede eliminar el jugador porque pertenece a un club.');
         }
 
         $this->entityManager->remove($player);

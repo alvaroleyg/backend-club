@@ -8,6 +8,6 @@ class CoachNotFoundException extends HttpException
 {
     public function __construct()
     {
-        parent::__construct(404, "Entrendor no encontrado");
+        parent::__construct(404, "Entrenador no encontrado");
     }
 }

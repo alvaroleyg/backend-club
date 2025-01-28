@@ -40,7 +40,7 @@ class ClubService
         return $club;
     }
 
-    public function addPlayerToClub(int $clubId, int $playerId): void
+    public function addPlayerToClub(int $clubId, int $playerId): array
     {
         $club = $this->clubRepository->find($clubId);
         $player = $this->playerRepository->find($playerId);
@@ -54,22 +54,26 @@ class ClubService
         }
 
         $salary = $player->getSalary();
-        $totalSalaries = $club->calculateTotalSalaries() + $salary;
+        $currentBudget = $club->getBudget();
 
-        if ($totalSalaries > $club->getBudget()) {
+        if ($salary > $currentBudget) {
             throw new InsufficientBudgetException();
         }
 
         $player->setClub($club);
-        $player->setSalary($salary);
+        $club->setBudget($currentBudget - $salary);
         $this->entityManager->flush();
+
+        return [
+            'player' => $player,
+            'club' => $club
+        ];
     }
 
-    public function addCoachToClub(int $clubId, int $coachId): void
+    public function addCoachToClub(int $clubId, int $coachId): array
     {
         $club = $this->clubRepository->find($clubId);
         $coach = $this->coachRepository->find($coachId);
-        $salary = $coach->getSalary();
 
         if (!$club) {
             throw new ClubNotFoundException();
@@ -79,33 +83,24 @@ class ClubService
             throw new AlreadyInClubException();
         }
 
-        $totalSalaries = $club->calculateTotalSalaries() + $salary;
+        $salary = $coach->getSalary();
+        $currentBudget = $club->calculateTotalSalaries() + $salary;
 
-        if ($totalSalaries > $club->getBudget()) {
+        if ($salary > $club->getBudget()) {
             throw new InsufficientBudgetException();
         }
 
         $coach->setClub($club);
-        $coach->setSalary($salary);
+        $club->setBudget($currentBudget - $salary);
         $this->entityManager->flush();
+
+        return [
+            'coach' => $coach,
+            'club' => $club
+        ];
     }
 
-    private function calculateTotalSalaries(Club $club): float
-    {
-        $total = 0;
-
-        foreach ($club->getPlayers() as $player) {
-            $total += $player->getSalary() ?? 0;
-        }
-
-        foreach ($club->getCoaches() as $coach) {
-            $total += $coach->getSalary() ?? 0;
-        }
-
-        return $total;
-    }
-
-    public function updateClubBudget(int $clubId, float $salaryImpact): float
+    public function updateClubBudget(int $clubId, float $change): float
     {
         $club = $this->clubRepository->find($clubId);
 
@@ -114,10 +109,10 @@ class ClubService
         }
 
         $currentBudget = $club->getBudget();
-        $newBudget = $currentBudget + $salaryImpact;
+        $newBudget = $currentBudget + $change;
 
         if ($newBudget < 0) {
-            throw new \Exception('El presupuesto no puede ser negativo.');
+            throw new InsufficientBudgetException('El club no tiene suficiente presupuesto para asumir ese déficit');
         }
 
         $club->setBudget($newBudget);
@@ -139,8 +134,10 @@ class ClubService
             throw new \InvalidArgumentException("El jugador no pertenece a este club");
         }
 
+        $salary = $player->getSalary();
+        $club->setBudget($club->getBudget() + $salary);
+
         $player->setClub(null);
-        $player->setSalary(0);
         $this->entityManager->flush();
     }
 
@@ -157,8 +154,10 @@ class ClubService
             throw new \InvalidArgumentException("El entrenador no pertenece a este club");
         }
 
+        $salary = $coach->getSalary();
+        $club->setBudget($club->getBudget() + $salary);
+
         $coach->setClub(null);
-        $coach->setSalary(0);
         $this->entityManager->flush();
     }
 
@@ -173,19 +172,16 @@ class ClubService
      */
     public function getClubPlayers(int $clubId, int $page, int $limit, array $filters = []): array
     {
-        // 1. Verificar que el club exista
         $club = $this->clubRepository->find($clubId);
         if (!$club) {
             throw new ClubNotFoundException();
         }
 
-        // 2. Construir la consulta con filtros
         $queryBuilder = $this->playerRepository->createQueryBuilder('p')
             ->andWhere('p.club = :clubId')
             ->setParameter('clubId', $club)
             ->orderBy('p.id', 'ASC');
 
-        // 2.1. Aplicar filtros dinámicos (ej: por nombre)
         $filterByName = $filters['name'] ?? null;
         if (!empty($filterByName)) {
             $queryBuilder
@@ -194,13 +190,8 @@ class ClubService
         }
 
         $query = $queryBuilder->getQuery();
-
-        // Depuración: Imprime la consulta SQL y los parámetros
         dump($query->getSQL(), $query->getParameters());
-
         $paginator = new Paginator($query);
-
-        // 3. Paginación
         $query = $queryBuilder->getQuery()
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
@@ -208,7 +199,6 @@ class ClubService
         $paginator = new Paginator($query);
         $total = count($paginator);
 
-        // 4. Formatear resultados (solo id y nombre)
         $players = [];
         foreach ($paginator as $player) {
             $players[] = [
