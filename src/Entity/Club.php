@@ -33,7 +33,7 @@ class Club
     private $name;
 
     /**
-     * @ORM\Column(type="float")
+     * @ORM\Column(type="float", nullable=true)
      * @Assert\NotBlank(message="El presupuesto no puede estar vacío")
      * @Assert\Positive(message="El presupuesto debe ser un número positivo")
      */

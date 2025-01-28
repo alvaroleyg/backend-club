@@ -5,15 +5,27 @@ namespace App\Service;
 use App\Entity\Player;
 use App\Repository\PlayerRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+// use Doctrine\ORM\Tools\Pagination\Paginator;
+// use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+// use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use App\Exception\PlayerNotFoundException;
+
 
 class PlayerService
 {
+    private $entityManager;
+    private $playerRepository;
+    // private $normalizer;
+
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private PlayerRepository $playerRepository
-    ) {}
+        EntityManagerInterface $entityManager,
+        PlayerRepository $playerRepository,
+        // NormalizerInterface $normalizer
+    ) {
+        $this->entityManager = $entityManager;
+        $this->playerRepository = $playerRepository;
+        // $this->normalizer = $normalizer;
+    }
 
     public function createPlayer(Player $player): Player
     {
@@ -22,26 +34,12 @@ class PlayerService
         return $player;
     }
 
-    public function getAllPlayers(int $page, int $limit): array
+    public function getAllPlayers(): array
     {
-        $query = $this->playerRepository->createQueryBuilder('p')
-            ->orderBy('p.name', 'ASC')
+        return $this->playerRepository->createQueryBuilder('p')
+            ->select('p.id', 'p.name')
             ->getQuery()
-            ->setFirstResult(($page - 1) * $limit)
-            ->setMaxResults($limit);
-
-        $paginator = new Paginator($query);
-        $total = count($paginator);
-
-        return [
-            'players' => iterator_to_array($paginator->getIterator()),
-            'total' => $total
-        ];
-    }
-
-    public function getPlayerById(int $id): ?Player
-    {
-        return $this->playerRepository->find($id);
+            ->getArrayResult();
     }
 
     public function deletePlayer(int $id): void
@@ -49,7 +47,7 @@ class PlayerService
         $player = $this->playerRepository->find($id);
 
         if (!$player) {
-            throw new NotFoundHttpException("Jugador no encontrado");
+            throw new PlayerNotFoundException();
         }
 
         $this->entityManager->remove($player);

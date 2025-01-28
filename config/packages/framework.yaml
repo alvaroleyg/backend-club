@@ -18,3 +18,7 @@ framework:
 
     validation:
         enabled: true
+
+    # Enables the twig template engine
+    serializer:
+        enabled: true

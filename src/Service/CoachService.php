@@ -6,7 +6,7 @@ use App\Entity\Coach;
 use App\Repository\CoachRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Exception\CoachNotFoundException;
 
 class CoachService
 {
@@ -39,17 +39,12 @@ class CoachService
         ];
     }
 
-    public function getCoachById(int $id): ?Coach
-    {
-        return $this->coachRepository->find($id);
-    }
-
     public function deleteCoach(int $id): void
     {
         $coach = $this->coachRepository->find($id);
 
         if (!$coach) {
-            throw new NotFoundHttpException("Entrenador no encontrado");
+            throw new CoachNotFoundException();
         }
 
         $this->entityManager->remove($coach);

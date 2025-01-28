@@ -31,22 +31,17 @@ class Coach
     private $name;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
-     * @Assert\NotBlank(message="La edad no puede estar vacía")
-     * @Assert\Range(
-     *     min=25,
-     *     max=90,
-     *     notInRangeMessage="La edad debe estar entre {{ min }} y {{ max }} años"
-     * )
+     * @ORM\Column(type="integer")
      */
     private $age;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="float")
      * @Assert\NotBlank(message="El salario no puede estar vacío")
      * @Assert\Positive(message="El salario debe ser un número positivo")
      */
-    private $salary;
+    // private $salary;
+    private ?float $salary = null;
 
     /**
      * @ORM\ManyToOne(targetEntity=Club::class, inversedBy="coaches")
@@ -88,7 +83,7 @@ class Coach
         return $this->salary;
     }
 
-    public function setSalary(float $salary): self
+    public function setSalary(?float $salary): self
     {
         $this->salary = $salary;
 

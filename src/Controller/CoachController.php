@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Exception\CoachNotFoundException;
 use App\Service\CoachService;
 use App\Entity\Coach;
 
@@ -28,8 +28,8 @@ class CoachController extends AbstractController
 
         $coach = new Coach();
         $coach->setName($data['name'] ?? '');
-        $coach->setAge($data['age'] ?? null);
-        $coach->setSalary($data['salary'] ?? null);
+        $coach->setAge($data['age'] ?? 0);
+        $coach->setSalary($data['salary'] ?? 0);
 
         $errors = $validator->validate($coach, null, $coach->getClub() ? ['Club'] : []);
 
@@ -39,13 +39,16 @@ class CoachController extends AbstractController
 
         $coachService->createCoach($coach);
 
-        return $this->json($coach, 201);
+        return $this->json([
+            'message' => 'Entrenador creado exitosamente',
+            'coach' => $coach // Clave explícita
+        ], 201);
     }
 
     /**
      * @Route("", methods={"GET"})
      */
-    public function listCoaches(Request $request, CoachService $coachService): JsonResponse
+    public function getAllCoaches(Request $request, CoachService $coachService): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 10);
@@ -61,39 +64,26 @@ class CoachController extends AbstractController
     }
 
     /**
-     * @Route("/{id}", methods={"GET"})
-     */
-    public function getCoachDetails(int $id, CoachService $coachService): JsonResponse
-    {
-        $coach = $coachService->getCoachById($id);
-
-        if (!$coach) {
-            return $this->json(['error' => 'Entrenador no encontrado'], 404);
-        }
-
-        return $this->json($coach);
-    }
-
-    private function formatErrors($errors): array
-    {
-        $errorMessages = [];
-        foreach ($errors as $error) {
-            $errorMessages[] = $error->getMessage();
-        }
-        return $errorMessages;
-    }
-
-    // src/Controller/CoachController.php
-    /**
      * @Route("/{id}", methods={"DELETE"})
      */
     public function deleteCoach(int $id, CoachService $coachService): JsonResponse
     {
         try {
             $coachService->deleteCoach($id);
-            return $this->json(null, 204);
-        } catch (NotFoundHttpException $e) {
-            return $this->json(['error' => $e->getMessage()], 404);
+            return $this->json(['message' => 'Entrenador eliminado exitosamente'], 200);
+        } catch (CoachNotFoundException $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getStatusCode());
         }
+    }
+
+    private function formatErrors($errors): array
+    {
+        $errorsResponse = [];
+
+        foreach ($errors as $error) {
+            $errorsResponse[$error->getPropertyPath()] = $error->getMessage();
+        }
+
+        return $errorsResponse;
     }
 }

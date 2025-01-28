@@ -7,8 +7,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class InsufficientBudgetException extends HttpException
 {
-    public function __construct(string $message = 'Presupuesto insuficiente')
+    public function __construct()
     {
-        parent::__construct(400, $message); // 400 Bad Request
+        parent::__construct(400, "Presupuesto insuficiente");
     }
 }

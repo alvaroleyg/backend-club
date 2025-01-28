@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Player;
+use App\Entity\Club;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -45,4 +46,13 @@ class PlayerRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function findByClub(Club $club): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.club = :club')
+            ->setParameter('club', $club)
+            ->getQuery()
+            ->getResult();
+    }
 }
