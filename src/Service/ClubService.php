@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use App\Entity\Club;
 use App\Repository\ClubRepository;
 use App\Repository\PlayerRepository;
@@ -13,21 +14,25 @@ use App\Exception\PlayerNotFoundException;
 use App\Exception\CoachNotFoundException;
 use App\Exception\AlreadyInClubException;
 use Doctrine\ORM\Tools\Pagination\Paginator;
+use App\Event\ClubMembershipEvent;
 
 class ClubService
 {
     private $entityManager;
+    private $eventDispatcher;
     private $clubRepository;
     private $playerRepository;
     private $coachRepository;
 
     public function __construct(
         EntityManagerInterface $entityManager,
+        EventDispatcherInterface $eventDispatcher,
         ClubRepository $clubRepository,
         PlayerRepository $playerRepository,
         CoachRepository $coachRepository,
     ) {
         $this->entityManager = $entityManager;
+        $this->eventDispatcher = $eventDispatcher;
         $this->clubRepository = $clubRepository;
         $this->playerRepository = $playerRepository;
         $this->coachRepository = $coachRepository;
@@ -64,6 +69,11 @@ class ClubService
         $club->setBudget($currentBudget - $salary);
         $this->entityManager->flush();
 
+        $this->eventDispatcher->dispatch(
+            new ClubMembershipEvent($club, $player, ClubMembershipEvent::PLAYER_ADDED),
+            ClubMembershipEvent::PLAYER_ADDED
+        );
+
         return [
             'player' => $player,
             'club' => $club
@@ -93,6 +103,11 @@ class ClubService
         $coach->setClub($club);
         $club->setBudget($currentBudget - $salary);
         $this->entityManager->flush();
+
+        $this->eventDispatcher->dispatch(
+            new ClubMembershipEvent($club, $coach, ClubMembershipEvent::PLAYER_ADDED),
+            ClubMembershipEvent::PLAYER_ADDED
+        );
 
         return [
             'coach' => $coach,
@@ -139,6 +154,11 @@ class ClubService
 
         $player->setClub(null);
         $this->entityManager->flush();
+
+        $this->eventDispatcher->dispatch(
+            new ClubMembershipEvent($club, $player, ClubMembershipEvent::PLAYER_ADDED),
+            ClubMembershipEvent::PLAYER_ADDED
+        );
     }
 
     public function removeCoachFromClub(int $clubId, int $coachId): void
@@ -159,6 +179,11 @@ class ClubService
 
         $coach->setClub(null);
         $this->entityManager->flush();
+
+        $this->eventDispatcher->dispatch(
+            new ClubMembershipEvent($club, $coach   , ClubMembershipEvent::PLAYER_ADDED),
+            ClubMembershipEvent::PLAYER_ADDED
+        );
     }
 
     /**
