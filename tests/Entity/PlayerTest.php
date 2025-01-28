@@ -22,7 +22,6 @@ class PlayerTest extends KernelTestCase
         $player = new Player();
         $player->setName('Lionel Messi');
         $player->setAge(30);
-        $player->setPosition('delantero');
         $player->setSalary(1000000);
 
         $errors = $this->validator->validate($player);
@@ -32,10 +31,9 @@ class PlayerTest extends KernelTestCase
     public function testInvalidPlayer()
     {
         $player = new Player();
-        $player->setName(''); // Nombre vacío
-        $player->setAge(15); // Edad fuera de rango
-        $player->setPosition('arquero'); // Posición inválida
-        $player->setSalary(-1000); // Salario negativo
+        $player->setName('');
+        $player->setAge(15);
+        $player->setSalary(-1000);
 
         $errors = $this->validator->validate($player);
         $this->assertGreaterThan(0, count($errors));

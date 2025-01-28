@@ -105,8 +105,8 @@ class ClubService
         $this->entityManager->flush();
 
         $this->eventDispatcher->dispatch(
-            new ClubMembershipEvent($club, $coach, ClubMembershipEvent::PLAYER_ADDED),
-            ClubMembershipEvent::PLAYER_ADDED
+            new ClubMembershipEvent($club, $coach, ClubMembershipEvent::COACH_ADDED),
+            ClubMembershipEvent::COACH_ADDED
         );
 
         return [
@@ -156,8 +156,8 @@ class ClubService
         $this->entityManager->flush();
 
         $this->eventDispatcher->dispatch(
-            new ClubMembershipEvent($club, $player, ClubMembershipEvent::PLAYER_ADDED),
-            ClubMembershipEvent::PLAYER_ADDED
+            new ClubMembershipEvent($club, $player, ClubMembershipEvent::PLAYER_REMOVED),
+            ClubMembershipEvent::PLAYER_REMOVED
         );
     }
 
@@ -181,8 +181,8 @@ class ClubService
         $this->entityManager->flush();
 
         $this->eventDispatcher->dispatch(
-            new ClubMembershipEvent($club, $coach   , ClubMembershipEvent::PLAYER_ADDED),
-            ClubMembershipEvent::PLAYER_ADDED
+            new ClubMembershipEvent($club, $coach, ClubMembershipEvent::COACH_REMOVED),
+            ClubMembershipEvent::COACH_REMOVED
         );
     }
 
