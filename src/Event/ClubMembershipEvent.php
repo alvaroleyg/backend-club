@@ -23,7 +23,6 @@ class ClubMembershipEvent extends Event
         $this->action = $action;
     }
 
-    // Getters
     public function getClub(): Club { return $this->club; }
     public function getMember() { return $this->member; }
     public function getAction(): string { return $this->action; }

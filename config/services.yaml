@@ -34,7 +34,7 @@ services:
 
     App\EventListener\EmailNotificationListener:
         tags:
-            - { name: kernel.event_listener, event: club.player_added, method: onPlayerAdded  }
+            - { name: kernel.event_listener, event: club.player_added, method: onMembershipChange  }
             - { name: kernel.event_listener, event: club.player_removed, method: onMembershipChange }
             - { name: kernel.event_listener, event: club.coach_added, method: onMembershipChange }
             - { name: kernel.event_listener, event: club.coach_removed, method: onMembershipChange }
