@@ -1,6 +1,5 @@
 <?php
 
-// tests/Entity/PlayerTest.php
 namespace App\Tests\Entity;
 
 use App\Entity\Player;
@@ -17,6 +16,9 @@ class PlayerTest extends KernelTestCase
         $this->validator = self::$container->get(ValidatorInterface::class);
     }
 
+    /**
+     * @covers \App\Entity\Player
+     */
     public function testValidPlayer()
     {
         $player = new Player();
@@ -28,6 +30,9 @@ class PlayerTest extends KernelTestCase
         $this->assertCount(0, $errors);
     }
 
+    /**
+     * @covers \App\Entity\Player
+     */
     public function testInvalidPlayer()
     {
         $player = new Player();
@@ -37,5 +42,16 @@ class PlayerTest extends KernelTestCase
 
         $errors = $this->validator->validate($player);
         $this->assertGreaterThan(0, count($errors));
+    }
+
+    /**
+     * @covers \App\Entity\Player
+     */
+    public function negativeSalary(): void {
+        $player = new Player();
+        $player->setSalary(-500);
+        
+        $errors = $this->validator->validateProperty($player, 'salary');
+        $this->assertNotEmpty($errors);
     }
 }

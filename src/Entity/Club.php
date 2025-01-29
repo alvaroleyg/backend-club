@@ -8,46 +8,34 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * @ORM\Entity(repositoryClass=ClubRepository::class)
- */
+#[ORM\Entity(repositoryClass: ClubRepository::class)]
 class Club
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
-    private $id;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: "integer")]
+    private ?int $id = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank(message="El nombre no puede estar vacío.")
-     * @Assert\Length(
-     *     min=2,
-     *     max=255,
-     *     minMessage="El nombre debe tener al menos {{ limit }} caracteres",
-     *     maxMessage="El nombre no puede tener más de {{ limit }} caracteres"
-     * )
-     */
-    private $name;
+    #[ORM\Column(type: "string", length: 255)]
+    #[Assert\NotBlank(message: "El nombre no puede estar vacío.")]
+    #[Assert\Length(
+        min: 2,
+        max: 255,
+        minMessage: "El nombre debe tener al menos {{ limit }} caracteres",
+        maxMessage: "El nombre no puede tener más de {{ limit }} caracteres"
+    )]
+    private string $name;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     * @Assert\NotBlank(message="El presupuesto no puede estar vacío")
-     * @Assert\Positive(message="El presupuesto debe ser un número positivo")
-     */
-    private $budget;
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Assert\NotBlank(message: "El presupuesto no puede estar vacío")]
+    #[Assert\Positive(message: "El presupuesto debe ser un número positivo")]
+    private ?float $budget = null;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Player::class, mappedBy="club")
-     */
-    private $players;
+    #[ORM\OneToMany(targetEntity: Player::class, mappedBy: "club")]
+    private Collection $players;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Coach::class, mappedBy="club")
-     */
-    private $coaches;
+    #[ORM\OneToMany(targetEntity: Coach::class, mappedBy: "club")]
+    private Collection $coaches;
 
     public function __construct()
     {
@@ -55,7 +43,6 @@ class Club
         $this->coaches = new ArrayCollection();
     }
 
-    // Getters and Setters
     public function getId(): ?int
     {
         return $this->id;
@@ -69,7 +56,6 @@ class Club
     public function setName(string $name): self
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -81,13 +67,9 @@ class Club
     public function setBudget(float $budget): self
     {
         $this->budget = $budget;
-
         return $this;
     }
     
-    /**
-     * @return Collection<int, Player>
-     */
     public function getPlayers(): Collection
     {
         return $this->players;
@@ -99,7 +81,6 @@ class Club
             $this->players[] = $player;
             $player->setClub($this);
         }
-
         return $this;
     }
 
@@ -110,13 +91,9 @@ class Club
                 $player->setClub(null);
             }
         }
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Coach>
-     */
     public function getCoaches(): Collection
     {
         return $this->coaches;
@@ -128,7 +105,6 @@ class Club
             $this->coaches[] = $coach;
             $coach->setClub($this);
         }
-
         return $this;
     }
 
@@ -139,7 +115,6 @@ class Club
                 $coach->setClub(null);
             }
         }
-
         return $this;
     }
 

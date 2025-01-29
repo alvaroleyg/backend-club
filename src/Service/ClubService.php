@@ -217,9 +217,10 @@ class ClubService
         $query = $queryBuilder->getQuery();
         dump($query->getSQL(), $query->getParameters());
         $paginator = new Paginator($query);
-        $query = $queryBuilder->getQuery()
+        $queryBuilder
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
+        $query = $queryBuilder->getQuery();
 
         $paginator = new Paginator($query);
         $total = count($paginator);

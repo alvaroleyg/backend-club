@@ -6,47 +6,34 @@ use App\Repository\CoachRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * @ORM\Entity(repositoryClass=CoachRepository::class)
- */
+#[ORM\Entity(repositoryClass: CoachRepository::class)]
 class Coach
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
-    private $id;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank(message="El nombre no puede estar vacío")
-     * @Assert\Length(
-     *     min=2,
-     *     max=255,
-     *     minMessage="El nombre debe tener al menos {{ limit }} caracteres",
-     *     maxMessage="El nombre no puede tener más de {{ limit }} caracteres"
-     * )
-     */
-    private $name;
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank(message: 'El nombre no puede estar vacío')]
+    #[Assert\Length(
+        min: 2,
+        max: 255,
+        minMessage: 'El nombre debe tener al menos {{ limit }} caracteres',
+        maxMessage: 'El nombre no puede tener más de {{ limit }} caracteres'
+    )]
+    private ?string $name = null;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
-    private $age;
+    #[ORM\Column(type: 'integer')]
+    private ?int $age = null;
 
-    /**
-     * @ORM\Column(type="float")
-     * @Assert\NotBlank(message="El salario no puede estar vacío")
-     * @Assert\Positive(message="El salario debe ser un número positivo")
-     */
-    // private $salary;
+    #[ORM\Column(type: 'float')]
+    #[Assert\NotBlank(message: 'El salario no puede estar vacío')]
+    #[Assert\Positive(message: 'El salario debe ser un número positivo')]
     private ?float $salary = null;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Club::class, inversedBy="coaches")
-     */
-    private $club;
+    #[ORM\ManyToOne(targetEntity: Club::class, inversedBy: 'coaches')]
+    private ?Club $club = null;
 
     // Getters and setters
     public function getId(): ?int
@@ -62,7 +49,6 @@ class Coach
     public function setName(string $name): self
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -74,7 +60,6 @@ class Coach
     public function setAge(int $age): self
     {
         $this->age = $age;
-
         return $this;
     }
 
@@ -86,7 +71,6 @@ class Coach
     public function setSalary(?float $salary): self
     {
         $this->salary = $salary;
-
         return $this;
     }
 
@@ -98,7 +82,6 @@ class Coach
     public function setClub(?Club $club): self
     {
         $this->club = $club;
-
         return $this;
     }
 }
