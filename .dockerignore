@@ -5,3 +5,4 @@ vendor
 logs
 tmp
 docker-compose.override.yml
+bin/.phpunit/

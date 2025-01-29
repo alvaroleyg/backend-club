@@ -21,3 +21,4 @@
 ###< phpunit/phpunit ###
 
 archivocontodo
+.env.local
