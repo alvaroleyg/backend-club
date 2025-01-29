@@ -25,8 +25,8 @@ class EmailNotificationListener
         $actionType = str_contains($action, 'ADDED') ? 'agregado' : 'eliminado';
 
         $email = (new Email())
-            ->from('system@clubapp.com')
-            ->to('admin@clubapp.com')
+            ->from('test@mailtrap.io')
+            ->to('test@mailtrap.io')
             ->subject("Cambio en membresía del club {$club->getName()}")
             ->text("$memberType {$member->getName()} ha sido $actionType del club {$club->getName()}");
 
