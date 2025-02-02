@@ -6,6 +6,7 @@ services:
     ports:
       - "8000:80"
     volumes:
+      - ./docker/apache/000-default.conf:/etc/apache2/sites-available/000-default.conf
       - .:/var/www/html
     working_dir: /var/www/html
     depends_on:
