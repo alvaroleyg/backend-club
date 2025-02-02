@@ -10,6 +10,8 @@ services:
     working_dir: /var/www/html
     depends_on:
       - db
+    networks:
+      - app-network
 
   db:
     image: mysql:8.0
@@ -22,12 +24,16 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
 
   mailer:
-    image: axllent/mailpit
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+      image: axllent/mailpit
+      ports:
+        - "1025:1025"
+        - "8025:8025"
+      networks:
+        - app-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -38,6 +44,12 @@ services:
       - "8080:80"
     depends_on:
       - db
+    networks:
+      - app-network
 
 volumes:
   mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
