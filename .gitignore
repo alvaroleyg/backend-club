@@ -11,6 +11,7 @@
 ###> symfony/phpunit-bridge ###
 .phpunit
 .phpunit.result.cache
+/.phpunit.cache
 ###< symfony/phpunit-bridge ###
 archivocontodo
 .env.local
