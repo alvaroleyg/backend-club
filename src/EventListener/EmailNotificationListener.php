@@ -22,13 +22,13 @@ class EmailNotificationListener
         $action = $event->getAction();
 
         $memberType = $member instanceof \App\Entity\Player ? 'Jugador' : 'Entrenador';
-        $actionType = str_contains($action, 'ADDED') ? 'agregado' : 'eliminado';
+        $actionType = str_contains($action, 'added') ? 'añadido al' : 'eliminado del';
 
         $email = (new Email())
-            ->from('test@mailtrap.io')
-            ->to('test@mailtrap.io')
+            ->from('noreply@tuapp.com')
+            ->to('notificaciones@tuapp.com')
             ->subject("Cambio en membresía del club {$club->getName()}")
-            ->text("$memberType {$member->getName()} ha sido $actionType del club {$club->getName()}");
+            ->text("$memberType {$member->getName()} ha sido $actionType club {$club->getName()}");
 
         $this->mailer->send($email);
     }

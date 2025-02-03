@@ -5,12 +5,15 @@ services:
     build: .
     ports:
       - "8000:80"
+    environment:
+      MAILER_DSN: smtp://mailpit:1025
     volumes:
       - ./docker/apache/000-default.conf:/etc/apache2/sites-available/000-default.conf
       - .:/var/www/html
     working_dir: /var/www/html
     depends_on:
       - db
+      - mailpit
 
   db:
     image: mysql:8.0
@@ -24,8 +27,8 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  mailer:
-      image: axllent/mailpit
+  mailpit:
+      image: axllent/mailpit:latest
       ports:
         - "1025:1025"
         - "8025:8025"
